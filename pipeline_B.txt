@@ -1,0 +1,163 @@
+PURPOSE: Process onboarding call + existing v1 → produce v2 Memo + v2 Agent Spec + Changelog
+
+TRIGGER
+  ├── Type: Manual Trigger
+  └── Prerequisite: Pipeline A must have run successfully (v1 files must exist)
+
+     │
+     ▼
+
+NODE 1: SET VARIABLES
+  ├── account_id: "bens_electric"
+  ├── onboarding_path: "/inputs/bens_electric/onboarding_transcript.txt"
+  ├── v1_memo_path: "/outputs/accounts/bens_electric/v1/account_memo.json"
+  ├── output_path: "/outputs/accounts/bens_electric/v2/"
+  └── version: "v2"
+
+     │
+     ▼
+
+NODE 2: READ ONBOARDING TRANSCRIPT
+  ├── Type: Read File node
+  ├── Input: onboarding_transcript.txt
+  └── Output: Full onboarding transcript as string
+
+     │
+     ▼
+
+NODE 3: READ V1 ACCOUNT MEMO
+  ├── Type: Read File node
+  ├── Input: /outputs/accounts/bens_electric/v1/account_memo.json
+  ├── Output: v1 memo as JSON object
+  └── Error: If v1 doesn't exist → stop workflow, create error issue
+
+     │
+     ▼
+
+NODE 4: LLM EXTRACTION — ONBOARDING UPDATES
+  ├── Type: HTTP Request node (Groq API)
+  ├── System prompt: extraction_onboarding.md
+  ├── User message: BOTH the v1 memo AND the onboarding transcript
+  ├── Purpose: Extract ONLY new/changed/confirmed information
+  ├── Key instruction in prompt:
+  │   ├── "Here is the existing v1 memo from the demo call"
+  │   ├── "Here is the onboarding call transcript"
+  │   ├── "Return ONLY fields that are NEW, CHANGED, or CONFIRMED"
+  │   ├── "For unchanged fields, do not include them"
+  │   ├── "For each changed field, include the reason from the transcript"
+  │   └── "Update questions_or_unknowns: remove resolved, keep unresolved"
+  └── Output: Patch/updates JSON
+
+     │
+     ▼
+
+NODE 5: MERGE v1 + PATCHES → v2 MEMO
+  ├── Type: Function/Code node
+  ├── Logic:
+  │   ├── Deep clone v1 memo
+  │   ├── Apply each patch from Node 4 output
+  │   ├── For each patched field:
+  │   │   ├── Update the value
+  │   │   ├── Update confidence to "CONFIRMED_BY_CLIENT" where applicable
+  │   │   └── Track the change for changelog
+  │   ├── Update questions_or_unknowns:
+  │   │   ├── Remove items that were resolved in onboarding
+  │   │   └── Add any NEW unknowns that emerged
+  │   ├── Update metadata:
+  │   │   ├── version: "v2"
+  │   │   ├── sources: ["demo_sales_call", "kickoff_onboarding_call"]
+  │   │   └── generated_at: current timestamp
+  │   └── Preserve ALL unchanged fields exactly as they were in v1
+  └── Output: Complete v2 account_memo.json
+
+     │
+     ▼
+
+NODE 6: GENERATE CHANGELOG
+  ├── Type: Function/Code node (NOT LLM — deterministic comparison)
+  ├── Logic:
+  │   ├── Load v1 memo and v2 memo
+  │   ├── Deep compare every field
+  │   ├── For each difference:
+  │   │   ├── Record field path (dot notation)
+  │   │   ├── Record v1 value
+  │   │   ├── Record v2 value
+  │   │   └── Record reason (from patch data)
+  │   ├── Calculate:
+  │   │   ├── total_fields_changed
+  │   │   ├── total_unknowns_resolved
+  │   │   └── total_unknowns_remaining
+  │   ├── List unknowns_resolved
+  │   └── List unknowns_still_open
+  └── Output: changelog.json
+
+     │
+     ▼
+
+NODE 7: SAVE v2 ACCOUNT MEMO
+  ├── Type: Write File node
+  └── Path: /outputs/accounts/bens_electric/v2/account_memo.json
+
+     │
+     ▼
+
+NODE 8: SAVE CHANGELOG
+  ├── Type: Write File node
+  └── Path: /outputs/accounts/bens_electric/v2/changelog.json
+
+     │
+     ▼
+
+NODE 9: LLM GENERATION — AGENT SPEC v2
+  ├── Type: HTTP Request node (Groq API)
+  ├── System prompt: agent_spec_generator.md (SAME prompt as Pipeline A)
+  ├── User message: v2 account memo
+  ├── Purpose: Generate updated Retell agent spec from v2 data
+  └── Output: agent_spec v2 JSON
+
+     │
+     ▼
+
+NODE 10: VALIDATE AGENT SPEC v2
+  ├── Type: Function/Code node
+  ├── Logic:
+  │   ├── Validate against schema
+  │   ├── Verify system_prompt reflects v2 data:
+  │   │   ├── Business hours should say 8:30-5:00 (not null)
+  │   │   ├── Pricing section should exist (only on customer ask)
+  │   │   ├── G&M Pressure Washing exception should be in after-hours flow
+  │   │   └── Notification email should be specified
+  │   └── Verify limitations list is shorter than v1 (unknowns resolved)
+  └── Output: Validated agent_spec v2
+
+     │
+     ▼
+
+NODE 11: SAVE AGENT SPEC v2
+  ├── Type: Write File node
+  └── Path: /outputs/accounts/bens_electric/v2/agent_spec.json
+
+     │
+     ▼
+
+NODE 12: SAVE EXTRACTION LOG
+  ├── Type: Write File node
+  └── Path: /outputs/accounts/bens_electric/v2/extraction_log.json
+
+     │
+     ▼
+
+NODE 13: UPDATE GITHUB ISSUE
+  ├── Type: HTTP Request node
+  ├── Find existing issue for this account OR create new
+  ├── Body:
+  │   ├── title: "Ben's Electric - v2 Complete | X fields updated, Y unknowns resolved"
+  │   ├── body: (changelog summary, links to output files)
+  │   └── labels: ["pipeline-b", "v2-complete", "ready-for-retell"]
+  └── Purpose: Close the loop on task tracking
+
+     │
+     ▼
+
+NODE 14: PIPELINE B COMPLETE
+  └── Summary: Log success with all output file paths

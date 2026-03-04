@@ -1,0 +1,61 @@
+clara-pipeline/
+│
+├── README.md
+├── .env
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+│
+├── /workflows/
+│   ├── pipeline_a.json                    # n8n workflow export (demo → v1)
+│   ├── pipeline_b.json                    # n8n workflow export (onboarding → v2)
+│   └── workflow_screenshots/
+│       ├── pipeline_a_overview.png
+│       └── pipeline_b_overview.png
+│
+├── /prompts/
+│   ├── extraction_demo.md                 # System prompt for Pipeline A extraction
+│   ├── extraction_onboarding.md           # System prompt for Pipeline B extraction
+│   ├── agent_spec_generator.md            # System prompt for Retell agent draft
+│   ├── changelog_generator.md             # System prompt for diff/changelog
+│   └── prompt_design_notes.md             # Why you designed prompts this way
+│
+├── /schemas/
+│   ├── account_memo_schema.json           # JSON schema defining memo structure
+│   ├── agent_spec_schema.json             # JSON schema defining agent spec structure
+│   └── changelog_schema.json              # JSON schema defining changelog structure
+│
+├── /inputs/
+│   └── /bens_electric/
+│       ├── demo_transcript.txt            # Full transcript from Fireflies (1hr 12min)
+│       ├── onboarding_transcript.txt      # Full transcript from Google Drive (26min)
+│       └── metadata.json                  # Account metadata (source links, dates, etc.)
+│
+├── /outputs/
+│   └── /accounts/
+│       └── /bens_electric/
+│           ├── /v1/
+│           │   ├── account_memo.json      # Pipeline A output
+│           │   ├── agent_spec.json        # Pipeline A output
+│           │   └── extraction_log.json    # Raw LLM response + metadata
+│           └── /v2/
+│               ├── account_memo.json      # Pipeline B output
+│               ├── agent_spec.json        # Pipeline B output
+│               ├── changelog.json         # Pipeline B output (v1 vs v2 diff)
+│               └── extraction_log.json    # Raw LLM response + metadata
+│
+├── /reference/
+│   ├── bens_electric_manual_v1.json       # Your manually written v1 (ground truth)
+│   ├── bens_electric_manual_v2.json       # Your manually written v2 (ground truth)
+│   ├── bens_electric_manual_changelog.json
+│   └── validation_notes.md               # Comparison: manual vs automated output
+│
+├── /docs/
+│   ├── architecture.md                    # System design explanation
+│   ├── scaling_plan.md                    # How this scales to 5, 50, 500 accounts
+│   ├── edge_cases.md                      # Known edge cases and how they're handled
+│   ├── improvements.md                    # What you'd do with more time
+│   └── retell_import_guide.md             # How to manually import agent spec into Retell
+│
+└── /loom/
+    └── demo_video_link.md                 # Link to your Loom walkthrough

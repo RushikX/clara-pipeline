@@ -1,0 +1,6 @@
+.env
+node_modules/
+n8n_data/
+*.log
+/outputs/accounts/*/v1/extraction_log.json
+/outputs/accounts/*/v2/extraction_log.json
