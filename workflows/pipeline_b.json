@@ -1,0 +1,157 @@
+{
+  "name": "Clara - Onboarding to V2",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==============================================\n// PASTE YOUR ONBOARDING TRANSCRIPT BELOW\n// ==============================================\n\nconst transcript = `\n[PASTE YOUR COMPLETE ONBOARDING TRANSCRIPT HERE]\n`;\n\n// ==============================================\n// PASTE V1 ACCOUNT MEMO (from Workflow A output)\n// ==============================================\n\nconst v1AccountMemo = {\n  // PASTE THE account_memo_v1 JSON HERE\n};\n\n// ==============================================\n// PASTE V1 AGENT SPEC (from Workflow A output)\n// ==============================================\n\nconst v1AgentSpec = {\n  // PASTE THE agent_spec_v1 JSON HERE\n};\n\nreturn {\n  json: {\n    transcript: transcript,\n    v1AccountMemo: v1AccountMemo,\n    v1AgentSpec: v1AgentSpec\n  }\n};"
+      },
+      "id": "input",
+      "name": "Input Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst transcript = $input.first().json.transcript;\nconst truncated = transcript.substring(0, 12000);\n\n// Load prompts from files\nconst systemMsg = fs.readFileSync('/data/prompts/groq_onboarding_system.txt', 'utf8');\nlet userMsg = fs.readFileSync('/data/prompts/groq_onboarding_user.txt', 'utf8');\n\n// Replace placeholder with actual transcript\nuserMsg = userMsg.replace('{{TRANSCRIPT}}', truncated);\n\nconst requestBody = {\n  model: \"llama-3.1-8b-instant\",\n  messages: [\n    { role: \"system\", content: systemMsg },\n    { role: \"user\", content: userMsg }\n  ],\n  temperature: 0.1,\n  max_tokens: 2000\n};\n\nreturn {\n  json: {\n    requestBody: requestBody,\n    v1AccountMemo: $input.first().json.v1AccountMemo,\n    v1AgentSpec: $input.first().json.v1AgentSpec\n  }\n};"
+      },
+      "id": "prepare_groq",
+      "name": "Prepare Groq Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {}
+      },
+      "id": "groq",
+      "name": "Groq Extract",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GROQ_CRED_ID",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const v1Memo = $('Prepare Groq Request').first().json.v1AccountMemo;\nconst v1Spec = $('Prepare Groq Request').first().json.v1AgentSpec;\nconst resp = $input.first().json;\n\nlet content = resp.choices[0].message.content.trim();\n\n// Clean JSON\nif (content.startsWith('```json')) content = content.slice(7);\nif (content.startsWith('```')) content = content.slice(3);\nif (content.endsWith('```')) content = content.slice(0, -3);\ncontent = content.trim();\n\nlet onb;\ntry {\n  onb = JSON.parse(content);\n} catch (e) {\n  return { json: { error: 'JSON parse failed', raw: content.substring(0, 500) } };\n}\n\n// Helper to clean \"null\" strings\nconst cleanNull = (val) => {\n  if (val === null || val === undefined) return null;\n  if (typeof val === 'string') {\n    const lower = val.toLowerCase().trim();\n    if (\n      lower === 'null' || \n      lower === 'string or null' || \n      lower === '' || \n      lower === 'n/a' ||\n      lower === 'not mentioned' ||\n      lower === 'unknown' ||\n      lower.includes('or null')\n    ) {\n      return null;\n    }\n  }\n  return val;\n};\n\n// ====================================\n// MERGE V1 + ONBOARDING -> V2\n// ====================================\n\nconst v2Memo = JSON.parse(JSON.stringify(v1Memo));\n\n// Update business hours if provided\nif (onb.business_hours?.start && cleanNull(onb.business_hours.start)) {\n  v2Memo.business_hours.start = onb.business_hours.start;\n}\nif (onb.business_hours?.end && cleanNull(onb.business_hours.end)) {\n  v2Memo.business_hours.end = onb.business_hours.end;\n}\n\n// Update pricing if provided\nif (cleanNull(onb.pricing?.service_call_fee)) {\n  v2Memo.pricing.service_call_fee = onb.pricing.service_call_fee;\n}\nif (cleanNull(onb.pricing?.hourly_rate)) {\n  v2Memo.pricing.hourly_rate = onb.pricing.hourly_rate;\n}\nif (cleanNull(onb.pricing?.disclosure_policy)) {\n  v2Memo.pricing.disclose_policy = onb.pricing.disclosure_policy;\n}\n\n// Add emergency contacts if provided\nif (onb.emergency_contacts && onb.emergency_contacts.length > 0) {\n  const validContacts = onb.emergency_contacts.filter(c => \n    cleanNull(c.company_name) || cleanNull(c.contact_name) || cleanNull(c.phone)\n  );\n  \n  if (validContacts.length > 0) {\n    v2Memo.emergency_routing_rules.primary_contact = validContacts[0];\n    v2Memo.emergency_routing_rules.after_hours_emergency_only_for = \n      validContacts.map(c => cleanNull(c.company_name)).filter(Boolean);\n    v2Memo.emergency_definition = \n      validContacts.map(c => `Emergency calls from ${c.company_name}`);\n  }\n}\n\n// Update notifications if provided\nif (cleanNull(onb.notifications?.email)) {\n  v2Memo.email = onb.notifications.email;\n}\nif (cleanNull(onb.notifications?.sms_number)) {\n  v2Memo.phone = onb.notifications.sms_number;\n}\n\n// Update technical setup if provided\nif (onb.technical_setup) {\n  v2Memo.technical_setup = {\n    phone_type: cleanNull(onb.technical_setup.phone_type),\n    call_forwarding: cleanNull(onb.technical_setup.call_forwarding),\n    has_second_number: onb.technical_setup.has_second_number,\n    transfer_enabled: onb.technical_setup.transfer_enabled\n  };\n  \n  if (onb.technical_setup.transfer_enabled === true) {\n    v2Memo.call_transfer_rules.transfer_enabled = true;\n  }\n}\n\n// Update after hours policy if provided\nif (cleanNull(onb.after_hours_policy)) {\n  v2Memo.non_emergency_routing_rules.after_hours = onb.after_hours_policy;\n}\n\n// Add special rules if provided\nif (onb.special_rules && onb.special_rules.length > 0) {\n  v2Memo.special_handling_rules = onb.special_rules.filter(r => cleanNull(r));\n}\n\n// Update questions/unknowns if provided\nif (onb.questions_or_unknowns && onb.questions_or_unknowns.length > 0) {\n  v2Memo.questions_or_unknowns = onb.questions_or_unknowns.filter(q => cleanNull(q));\n}\n\n// Update metadata\nv2Memo._metadata = {\n  version: \"v2\",\n  created_at: v1Memo._metadata?.created_at,\n  updated_at: new Date().toISOString(),\n  sources: [\"demo_call\", \"onboarding_call\"]\n};\n\n// ====================================\n// GENERATE CHANGELOG\n// ====================================\n\nconst changes = [];\n\nif (cleanNull(onb.pricing?.service_call_fee)) {\n  changes.push({\n    field: \"pricing.service_call_fee\",\n    old_value: v1Memo.pricing?.service_call_fee,\n    new_value: onb.pricing.service_call_fee,\n    change_type: v1Memo.pricing?.service_call_fee ? \"updated\" : \"added\"\n  });\n}\n\nif (cleanNull(onb.pricing?.hourly_rate)) {\n  changes.push({\n    field: \"pricing.hourly_rate\",\n    old_value: v1Memo.pricing?.hourly_rate,\n    new_value: onb.pricing.hourly_rate,\n    change_type: v1Memo.pricing?.hourly_rate ? \"updated\" : \"added\"\n  });\n}\n\nif (cleanNull(onb.business_hours?.start)) {\n  changes.push({\n    field: \"business_hours\",\n    old_value: `${v1Memo.business_hours?.start} - ${v1Memo.business_hours?.end}`,\n    new_value: `${onb.business_hours.start} - ${onb.business_hours.end}`,\n    change_type: \"updated\"\n  });\n}\n\nif (onb.emergency_contacts && onb.emergency_contacts.length > 0) {\n  const validContacts = onb.emergency_contacts.filter(c => cleanNull(c.company_name));\n  if (validContacts.length > 0) {\n    changes.push({\n      field: \"emergency_contacts\",\n      old_value: null,\n      new_value: validContacts,\n      change_type: \"added\"\n    });\n  }\n}\n\nif (onb.technical_setup?.phone_type && cleanNull(onb.technical_setup.phone_type)) {\n  changes.push({\n    field: \"technical_setup\",\n    old_value: null,\n    new_value: onb.technical_setup,\n    change_type: \"added\"\n  });\n}\n\nif (cleanNull(onb.notifications?.email)) {\n  changes.push({\n    field: \"notifications.email\",\n    old_value: v1Memo.email,\n    new_value: onb.notifications.email,\n    change_type: v1Memo.email ? \"updated\" : \"added\"\n  });\n}\n\nconst changelog = {\n  version: \"v2\",\n  previous_version: \"v1\",\n  generated_at: new Date().toISOString(),\n  source: \"onboarding_call\",\n  summary: `${changes.length} changes detected`,\n  changes: changes,\n  next_steps: (onb.next_steps || []).filter(s => cleanNull(s)),\n  remaining_unknowns: (onb.questions_or_unknowns || []).filter(q => cleanNull(q))\n};\n\nreturn {\n  json: {\n    v1Memo: v1Memo,\n    v2Memo: v2Memo,\n    v1Spec: v1Spec,\n    onboardingData: onb,\n    changelog: changelog\n  }\n};"
+      },
+      "id": "merge",
+      "name": "Merge V1 + Onboarding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst { v2Memo, v1Spec, onboardingData, changelog } = $input.first().json;\n\n// Load template\nlet template = fs.readFileSync('/data/prompts/agent_system_prompt_template_v2.txt', 'utf8');\n\n// Prepare values\nconst biz = v2Memo.company_name || \"[Company Name]\";\nconst owner = v2Memo.owner_name || \"[Owner]\";\nconst svcs = v2Memo.services_supported.length > 0 \n  ? v2Memo.services_supported.join(\", \") \n  : \"[Services]\";\nconst excl = v2Memo.services_not_supported?.join(\", \") || \"\";\nconst hrs = v2Memo.business_hours;\nconst bizHrs = `${hrs.days.join(\", \")} ${hrs.start} - ${hrs.end}`;\nconst fee = v2Memo.pricing?.service_call_fee || \"[Not Specified]\";\nconst rate = v2Memo.pricing?.hourly_rate || \"[Not Specified]\";\nconst pricingPolicy = v2Memo.pricing?.disclose_policy \n  ? `- Policy: ${v2Memo.pricing.disclose_policy}` \n  : \"\";\n\n// Build emergency section\nconst emgContacts = v2Memo.emergency_routing_rules?.primary_contact \n  ? [v2Memo.emergency_routing_rules.primary_contact]\n  : [];\n\nlet emgSection = \"\";\nif (emgContacts.length > 0 && emgContacts[0].company_name) {\n  const primary = emgContacts[0];\n  const vipNames = v2Memo.emergency_routing_rules.after_hours_emergency_only_for?.join(\", \") || primary.company_name;\n  \n  emgSection = `\n## VIP/EMERGENCY CONTACTS (After Hours)\nTransfer IMMEDIATELY for these callers:\n- ${vipNames}\n\nPrimary Contact: ${primary.contact_name || 'Contact'} @ ${primary.phone || 'Phone on file'}\n${primary.email ? `Email: ${primary.email}` : \"\"}\n${primary.notes ? `Notes: ${primary.notes}` : \"\"}\n\nAfter-Hours Emergency Flow for VIP:\n1. Caller says they're from ${vipNames}\n2. Say: \"Let me get your details and connect you right away.\"\n3. Collect: Name, phone, property address, issue description\n4. Transfer to: ${primary.phone}\n5. If transfer fails: \"I've flagged this as urgent. Someone will call you within 1 hour.\"`;\n}\n\n// Replace placeholders\nconst systemPrompt = template\n  .replace(/\\{\\{COMPANY_NAME\\}\\}/g, biz)\n  .replace(/\\{\\{OWNER_NAME\\}\\}/g, owner)\n  .replace(/\\{\\{BUSINESS_HOURS\\}\\}/g, bizHrs)\n  .replace(/\\{\\{SERVICES\\}\\}/g, svcs)\n  .replace(/\\{\\{EXCLUDED_SERVICES\\}\\}/g, excl ? `- Does NOT offer: ${excl}` : \"\")\n  .replace(/\\{\\{SERVICE_FEE\\}\\}/g, fee)\n  .replace(/\\{\\{HOURLY_RATE\\}\\}/g, rate)\n  .replace(/\\{\\{PRICING_POLICY\\}\\}/g, pricingPolicy)\n  .replace(/\\{\\{EMERGENCY_SECTION\\}\\}/g, emgSection);\n\n// Build V2 agent spec\nconst v2Spec = JSON.parse(JSON.stringify(v1Spec));\n\nv2Spec.response_engine.system_prompt = systemPrompt;\nv2Spec.business_config.business_hours = v2Memo.business_hours;\nv2Spec.business_config.pricing = v2Memo.pricing;\n\nif (v2Memo.call_transfer_rules?.transfer_enabled) {\n  v2Spec.call_handling.transfer_enabled = true;\n}\n\n// Add emergency contacts\nv2Spec.special_contacts = emgContacts;\n\n// Update notifications\nif (v2Memo.email) {\n  v2Spec.notifications.email = v2Memo.email;\n}\nif (v2Memo.phone) {\n  v2Spec.notifications.sms = v2Memo.phone;\n}\n\n// Update metadata\nv2Spec._metadata = {\n  version: \"v2\",\n  status: \"updated\",\n  created_at: v1Spec._metadata?.created_at,\n  updated_at: new Date().toISOString(),\n  source: \"onboarding_call\",\n  account_id: v2Memo.account_id,\n  changes_from_v1: changelog.changes.length\n};\n\n// Create task\nconst task = {\n  task_id: `TASK-${Date.now()}`,\n  account_id: v2Memo.account_id,\n  company_name: biz,\n  task_type: \"onboarding_call_processed\",\n  status: \"complete\",\n  pipeline: \"Pipeline B: Onboarding -> V2\",\n  version: \"v2\",\n  changes_count: changelog.changes.length,\n  outputs: {\n    account_memo: `outputs/${v2Memo.account_id}/v2/account_memo.json`,\n    agent_spec: `outputs/${v2Memo.account_id}/v2/agent_spec.json`,\n    changelog: `outputs/${v2Memo.account_id}/v2/changelog.json`\n  },\n  created_at: new Date().toISOString(),\n  created_by: \"n8n_automation\",\n  next_action: \"Agent ready for deployment\"\n};\n\n// Write files\nconst outputDir = `/outputs/${v2Memo.account_id}/v2`;\nfs.mkdirSync(outputDir, { recursive: true });\nfs.writeFileSync(path.join(outputDir, 'account_memo.json'), JSON.stringify(v2Memo, null, 2));\nfs.writeFileSync(path.join(outputDir, 'agent_spec.json'), JSON.stringify(v2Spec, null, 2));\nfs.writeFileSync(path.join(outputDir, 'changelog.json'), JSON.stringify(changelog, null, 2));\n\n// Update tasks.json\nconst tasksFile = '/outputs/tasks.json';\nlet tasks = { tasks: [] };\ntry {\n  if (fs.existsSync(tasksFile)) {\n    tasks = JSON.parse(fs.readFileSync(tasksFile, 'utf8'));\n  }\n} catch (e) {}\ntasks.tasks.push(task);\nfs.writeFileSync(tasksFile, JSON.stringify(tasks, null, 2));\n\nreturn {\n  json: {\n    v2Memo: v2Memo,\n    v2Spec: v2Spec,\n    changelog: changelog,\n    task: task,\n    files_saved: [\n      `${outputDir}/account_memo.json`,\n      `${outputDir}/agent_spec.json`,\n      `${outputDir}/changelog.json`,\n      tasksFile\n    ]\n  }\n};"
+      },
+      "id": "build_v2",
+      "name": "Build V2 Agent Spec",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { v2Memo, v2Spec, changelog, task, files_saved } = $input.first().json;\n\nreturn {\n  json: {\n    success: true,\n    message: \"Pipeline B Complete - V2 Files Saved!\",\n    company_name: v2Memo.company_name,\n    account_id: v2Memo.account_id,\n    changes_detected: changelog.changes.length,\n    files_saved: files_saved,\n    account_memo_v2: v2Memo,\n    agent_spec_v2: v2Spec,\n    changelog: changelog,\n    task: task\n  }\n};"
+      },
+      "id": "output",
+      "name": "Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Input Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Groq Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Groq Request": {
+      "main": [
+        [
+          {
+            "node": "Groq Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Extract": {
+      "main": [
+        [
+          {
+            "node": "Merge V1 + Onboarding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge V1 + Onboarding": {
+      "main": [
+        [
+          {
+            "node": "Build V2 Agent Spec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build V2 Agent Spec": {
+      "main": [
+        [
+          {
+            "node": "Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

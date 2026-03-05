@@ -1,0 +1,36 @@
+Read this transcript carefully and extract the business information.
+
+IMPORTANT: 
+- Extract REAL values from the transcript, not placeholders
+- The transcript is a sales call with a business owner
+- Look for company name, owner name, services, pricing, hours, CRM system, team size, etc.
+
+Return this JSON structure with ACTUAL extracted values:
+{
+  "company_name": "extract from transcript or null",
+  "owner_name": "extract from transcript or null",
+  "email": "extract from transcript or null",
+  "phone": "extract from transcript or null",
+  "address": "extract from transcript or null",
+  "crm_system": "extract from transcript or null",
+  "team_size": null,
+  "num_trucks": null,
+  "has_subcontractors": null,
+  "owner_role": "extract from transcript or null",
+  "services_offered": [],
+  "services_not_offered": [],
+  "handles_emergency_calls": null,
+  "emergency_policy": "extract from transcript or null",
+  "business_hours": "extract from transcript or null",
+  "after_hours_policy": "extract from transcript or null",
+  "service_call_fee": "extract from transcript or null",
+  "hourly_rate": "extract from transcript or null",
+  "plan_name": "extract from transcript or null",
+  "monthly_cost": null,
+  "term_months": null,
+  "questions_or_unknowns": [],
+  "summary": "brief summary of the business"
+}
+
+TRANSCRIPT:
+{{TRANSCRIPT}}

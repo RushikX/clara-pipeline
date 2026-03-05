@@ -1,50 +1,22 @@
-version: "3.8"
+version: '3.8'
 
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
-    container_name: clara-n8n
-    restart: unless-stopped
-
+    image: n8nio/n8n:latest
+    restart: always
     ports:
-      - "${N8N_PORT:-5678}:5678"
-
+      - "5678:5678"
     environment:
-      # Authentication
-      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
-
-      # Timezone
-      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-      - TZ=${GENERIC_TIMEZONE}
-
-      # n8n settings
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5678/
-
-      # Pass API keys into container
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - GROQ_MODEL=${GROQ_MODEL}
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - GITHUB_OWNER=${GITHUB_OWNER}
-      - GITHUB_REPO=${GITHUB_REPO}
-      - ACCOUNT_ID=${ACCOUNT_ID}
-
-      # Allow reading/writing local files
-      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
-
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - GENERIC_TIMEZONE=America/Edmonton
+      - N8N_SECURE_COOKIE=false
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs,path
     volumes:
-      # n8n internal data (workflows, credentials, settings)
-      - ./n8n_data:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
+      - ./data:/data
+      - ./outputs:/outputs
 
-      # Mount project folders so n8n can read/write them
-      - ./inputs:/data/inputs
-      - ./outputs:/data/outputs
-      - ./prompts:/data/prompts
-      - ./schemas:/data/schemas
-
-    # Make sure n8n can write to mounted folders
-    user: "1000:1000"
+volumes:
+  n8n_data:

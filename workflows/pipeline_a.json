@@ -1,0 +1,94 @@
+{
+  "name": "Clara - Demo to V1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==============================================\n// PASTE YOUR FULL DEMO TRANSCRIPT BELOW\n// ==============================================\n\nconst transcript = `\nSpeaker 1: 00:00 \n All right, we'll let Ben in now in three, two, one. And he's in.\n\nSpeaker 2: 00:16 \n Hey, Ben, can you hear me?\n\nSpeaker 3: 00:22 \n Wait, can you hear me? Yeah.\n\n[PASTE YOUR COMPLETE DEMO TRANSCRIPT HERE]\n`;\n\nreturn {\n  json: {\n    account_id: \"bens_electric_solutions\",\n    transcript: transcript\n  }\n};"
+      },
+      "id": "input",
+      "name": "Input Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const transcript = $input.first().json.transcript;\nconst truncated = transcript.substring(0, 12000);\n\nconst systemMsg = \"You extract business info from sales demo calls. Return ONLY valid JSON, no markdown, no code blocks.\";\n\nconst userMsg = `Extract from this transcript. If not mentioned, use null.\n\nReturn this EXACT JSON:\n{\n  \"company_name\": \"string or null\",\n  \"owner_name\": \"string or null\",\n  \"email\": \"string or null\",\n  \"phone\": \"string or null\",\n  \"address\": \"string or null\",\n  \"crm_system\": \"string or null\",\n  \"team_size\": \"number or null\",\n  \"num_trucks\": \"number or null\",\n  \"has_subcontractors\": \"boolean or null\",\n  \"owner_role\": \"string or null\",\n  \"services_offered\": [\"list of services\"],\n  \"services_not_offered\": [\"list\"],\n  \"handles_emergency_calls\": \"boolean or null\",\n  \"emergency_policy\": \"string or null\",\n  \"business_hours\": \"string or null\",\n  \"after_hours_policy\": \"string or null\",\n  \"service_call_fee\": \"string or null\",\n  \"hourly_rate\": \"string or null\",\n  \"plan_name\": \"string or null\",\n  \"monthly_cost\": \"number or null\",\n  \"term_months\": \"number or null\",\n  \"questions_or_unknowns\": [\"list\"],\n  \"summary\": \"1-2 sentence summary\"\n}\n\nTRANSCRIPT:\n${truncated}`;\n\nconst requestBody = {\n  model: \"llama-3.1-8b-instant\",\n  messages: [\n    { role: \"system\", content: systemMsg },\n    { role: \"user\", content: userMsg }\n  ],\n  temperature: 0.1,\n  max_tokens: 2000\n};\n\nreturn {\n  json: {\n    requestBody: requestBody,\n    account_id: $input.first().json.account_id\n  }\n};"
+      },
+      "id": "prepare_groq",
+      "name": "Prepare Groq Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {}
+      },
+      "id": "groq",
+      "name": "Groq Extract",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GROQ_CRED_ID",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const account_id = $('Prepare Groq Request').first().json.account_id;\nconst resp = $input.first().json;\n\nlet content = resp.choices[0].message.content.trim();\n\n// Clean JSON\nif (content.startsWith('```json')) content = content.slice(7);\nif (content.startsWith('```')) content = content.slice(3);\nif (content.endsWith('```')) content = content.slice(0, -3);\ncontent = content.trim();\n\nlet ext;\ntry {\n  ext = JSON.parse(content);\n} catch (e) {\n  return { json: { error: 'JSON parse failed', raw: content.substring(0, 500) } };\n}\n\n// Build Account Memo v1\nconst memo = {\n  account_id: account_id,\n  company_name: ext.company_name,\n  owner_name: ext.owner_name,\n  email: ext.email,\n  phone: ext.phone,\n  \n  business_hours: {\n    days: [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\"],\n    start: \"08:30\",\n    end: \"17:00\",\n    timezone: \"America/Edmonton\",\n    raw: ext.business_hours\n  },\n  \n  office_address: ext.address,\n  services_supported: ext.services_offered || [],\n  services_not_supported: ext.services_not_offered || [],\n  \n  emergency_definition: [],\n  emergency_routing_rules: {\n    primary_contact: null,\n    fallback: \"Take message, callback next business day\",\n    after_hours_emergency_only_for: []\n  },\n  \n  non_emergency_routing_rules: {\n    during_hours: \"Collect info, schedule appointment\",\n    after_hours: ext.after_hours_policy || \"Take message, callback next business day\"\n  },\n  \n  call_transfer_rules: {\n    transfer_enabled: false,\n    transfer_to: null,\n    timeout_seconds: 30,\n    retries: 2,\n    if_transfer_fails: \"Take message, assure callback\"\n  },\n  \n  integration_constraints: ext.crm_system ? [`CRM: ${ext.crm_system}`] : [],\n  \n  pricing: {\n    service_call_fee: ext.service_call_fee,\n    hourly_rate: ext.hourly_rate,\n    disclose_policy: \"Only if customer asks\"\n  },\n  \n  plan_selected: {\n    plan_name: ext.plan_name,\n    monthly_cost: ext.monthly_cost,\n    term_months: ext.term_months\n  },\n  \n  operations: {\n    crm_system: ext.crm_system,\n    team_size: ext.team_size,\n    num_trucks: ext.num_trucks,\n    has_subcontractors: ext.has_subcontractors,\n    owner_role: ext.owner_role\n  },\n  \n  questions_or_unknowns: ext.questions_or_unknowns || [],\n  notes: ext.summary || \"\",\n  \n  _metadata: {\n    version: \"v1\",\n    created_at: new Date().toISOString(),\n    source: \"demo_call\"\n  }\n};\n\nreturn { json: { accountMemo: memo, extracted: ext } };"
+      },
+      "id": "build_memo",
+      "name": "Build Account Memo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { accountMemo } = $input.first().json;\n\nconst biz = accountMemo.company_name || \"the company\";\nconst owner = accountMemo.owner_name || \"the owner\";\nconst svcs = accountMemo.services_supported.join(\", \") || \"electrical services\";\nconst excl = accountMemo.services_not_supported.join(\", \");\nconst hrs = accountMemo.business_hours;\nconst bizHrs = `${hrs.days.join(\", \")} ${hrs.start} - ${hrs.end}`;\nconst fee = accountMemo.pricing?.service_call_fee || \"\";\nconst rate = accountMemo.pricing?.hourly_rate || \"\";\n\n// Build Retell-compatible system prompt\nconst systemPrompt = `You are Clara, an AI receptionist for ${biz}.\n\n## CRITICAL RULES\n- Never mention tools, functions, or system to caller\n- Maximum 5 questions per call\n- Only quote pricing if customer asks\n- Never make up information\n\n## BUSINESS INFO\n- Company: ${biz}\n- Owner: ${owner}\n- Hours: ${bizHrs}\n- Services: ${svcs}\n${excl ? `- Does NOT offer: ${excl}` : \"\"}\n\n## PRICING (only if asked)\n${fee ? `- Service Call Fee: ${fee}` : \"\"}\n${rate ? `- Hourly Rate: ${rate}` : \"\"}\n\n## OFFICE HOURS CALL FLOW\n1. GREETING: \"Thank you for calling ${biz}, this is Clara. How can I help you today?\"\n2. COLLECT: Name, phone number, service address\n3. UNDERSTAND: \"Can you describe what you need done?\"\n4. SCHEDULE: \"Do you have a preferred day and time?\"\n5. CONFIRM: Repeat details back\n6. CLOSE: \"Thank you for calling ${biz}. Have a great day!\"\n\n## AFTER HOURS CALL FLOW\n1. GREETING: \"Thank you for calling ${biz}. We're currently closed. Our hours are ${bizHrs}. How can I help?\"\n2. CHECK: \"Is this an emergency?\"\n3. IF NOT EMERGENCY: Take message (name, phone, brief description)\n4. ASSURE: \"Someone will call you first thing tomorrow morning.\"\n5. CLOSE: \"Thank you for calling. Have a good evening!\"\n\n## CALL TRANSFER PROTOCOL\n- Announce: \"Let me connect you with someone who can help.\"\n- If fails: \"I couldn't reach them. Let me take your information for a callback.\"\n\n## SPECIAL SITUATIONS\n- SPAM/SALES: \"We're not interested. Thank you.\" (end call)\n- ANGRY CUSTOMER: \"I understand your frustration. Let me have ${owner} call you directly.\"\n- BILLING QUESTIONS: \"I'll have someone call you about that. Can I get your number?\"`;\n\n// Build Preliminary Retell Agent Configuration\nconst agentSpec = {\n  // Retell Agent Settings\n  agent_name: `Clara - ${biz}`,\n  voice_id: \"11labs-Bella\",\n  language: \"en-US\",\n  \n  // Response Engine Config\n  response_engine: {\n    type: \"retell-llm\",\n    system_prompt: systemPrompt\n  },\n  \n  // Voice Settings\n  voice_settings: {\n    stability: 0.5,\n    similarity_boost: 0.75\n  },\n  \n  // Call Settings\n  begin_message: `Thank you for calling ${biz}, this is Clara. How can I help you today?`,\n  end_call_phrases: [\"goodbye\", \"have a great day\", \"talk to you later\"],\n  \n  // Business Configuration\n  business_config: {\n    company_name: biz,\n    owner_name: owner,\n    business_hours: accountMemo.business_hours,\n    services_offered: accountMemo.services_supported,\n    services_excluded: accountMemo.services_not_supported,\n    pricing: accountMemo.pricing\n  },\n  \n  // Call Handling\n  call_handling: {\n    transfer_enabled: false,\n    transfer_number: null,\n    transfer_timeout_seconds: 30,\n    max_retries: 2,\n    fallback_action: \"Take message, assure callback\"\n  },\n  \n  // Notifications\n  notifications: {\n    email: accountMemo.email,\n    sms: accountMemo.phone\n  },\n  \n  // Special Contacts (VIP/Emergency)\n  special_contacts: [],\n  \n  // Metadata\n  _metadata: {\n    version: \"v1\",\n    status: \"preliminary\",\n    created_at: new Date().toISOString(),\n    source: \"demo_call\",\n    account_id: accountMemo.account_id\n  }\n};\n\nreturn { json: { accountMemo, agentSpec } };"
+      },
+      "id": "build_spec",
+      "name": "Build Agent Spec",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { accountMemo, agentSpec } = $input.first().json;\n\n// Create Task Entry (simulating Asana/task tracker)\nconst task = {\n  task_id: `TASK-${Date.now()}`,\n  account_id: accountMemo.account_id,\n  company_name: accountMemo.company_name,\n  \n  task_type: \"demo_call_processed\",\n  status: \"complete\",\n  \n  pipeline: \"Pipeline A: Demo -> V1\",\n  version: \"v1\",\n  \n  outputs: {\n    account_memo: `outputs/${accountMemo.account_id}/v1/account_memo.json`,\n    agent_spec: `outputs/${accountMemo.account_id}/v1/agent_spec.json`\n  },\n  \n  created_at: new Date().toISOString(),\n  created_by: \"n8n_automation\",\n  \n  next_action: \"Await onboarding call for V2 update\",\n  \n  notes: accountMemo.notes\n};\n\nreturn {\n  json: {\n    success: true,\n    message: \"Pipeline A Complete: Demo -> V1\",\n    \n    // ====================================\n    // OUTPUTS - Save these to local files\n    // ====================================\n    \n    // Save to: outputs/bens_electric_solutions/v1/account_memo.json\n    account_memo_v1: accountMemo,\n    \n    // Save to: outputs/bens_electric_solutions/v1/agent_spec.json\n    agent_spec_v1: agentSpec,\n    \n    // Append to: tasks.json\n    task: task,\n    \n    // ====================================\n    // INSTRUCTIONS\n    // ====================================\n    save_instructions: [\n      \"1. Copy 'account_memo_v1' -> outputs/bens_electric_solutions/v1/account_memo.json\",\n      \"2. Copy 'agent_spec_v1' -> outputs/bens_electric_solutions/v1/agent_spec.json\",\n      \"3. Add 'task' to tasks.json array\",\n      \"4. Run Onboarding -> V2 workflow next\"\n    ]\n  }\n};"
+      },
+      "id": "output",
+      "name": "Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Input Data", "type": "main", "index": 0 }]] },
+    "Input Data": { "main": [[{ "node": "Prepare Groq Request", "type": "main", "index": 0 }]] },
+    "Prepare Groq Request": { "main": [[{ "node": "Groq Extract", "type": "main", "index": 0 }]] },
+    "Groq Extract": { "main": [[{ "node": "Build Account Memo", "type": "main", "index": 0 }]] },
+    "Build Account Memo": { "main": [[{ "node": "Build Agent Spec", "type": "main", "index": 0 }]] },
+    "Build Agent Spec": { "main": [[{ "node": "Output", "type": "main", "index": 0 }]] }
+  }
+}

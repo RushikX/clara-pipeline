@@ -1,0 +1,45 @@
+Read this onboarding call transcript and extract NEW or UPDATED configuration details.
+
+IMPORTANT:
+- Extract REAL values from the transcript
+- This is a follow-up call to configure an AI phone agent
+- Look for: business hours, pricing, emergency contacts, notification settings, special rules
+
+Return this JSON structure with ACTUAL extracted values:
+{
+  "business_hours": {
+    "start": "HH:MM or null",
+    "end": "HH:MM or null"
+  },
+  "pricing": {
+    "service_call_fee": "exact fee mentioned or null",
+    "hourly_rate": "exact rate mentioned or null",
+    "disclosure_policy": "when to mention pricing or null"
+  },
+  "emergency_contacts": [
+    {
+      "company_name": "company name",
+      "contact_name": "person name or null",
+      "phone": "phone number or null",
+      "email": "email or null",
+      "notes": "relationship or special instructions"
+    }
+  ],
+  "notifications": {
+    "email": "notification email or null",
+    "sms_number": "SMS number or null"
+  },
+  "technical_setup": {
+    "phone_type": "iOS or Android or null",
+    "call_forwarding": "how calls should be forwarded or null",
+    "has_second_number": true,
+    "transfer_enabled": true
+  },
+  "after_hours_policy": "what to do after hours or null",
+  "special_rules": ["any special handling rules mentioned"],
+  "next_steps": ["action items mentioned in the call"],
+  "questions_or_unknowns": ["things still unclear"]
+}
+
+TRANSCRIPT:
+{{TRANSCRIPT}}

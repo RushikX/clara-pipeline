@@ -1,0 +1,64 @@
+{
+  "version": "v2",
+  "previous_version": "v1",
+  "generated_at": "2026-03-04T16:59:37.137Z",
+  "source": "onboarding_call",
+  "summary": "6 changes detected",
+  "changes": [
+    {
+      "field": "pricing.service_call_fee",
+      "old_value": null,
+      "new_value": 115,
+      "change_type": "added"
+    },
+    {
+      "field": "pricing.hourly_rate",
+      "old_value": null,
+      "new_value": 98,
+      "change_type": "added"
+    },
+    {
+      "field": "business_hours",
+      "old_value": "08:30 - 17:00",
+      "new_value": "09:00 - 17:00",
+      "change_type": "updated"
+    },
+    {
+      "field": "emergency_contacts",
+      "old_value": null,
+      "new_value": [
+        {
+          "company_name": "G&M Pressure Washing",
+          "contact_name": "Shelly",
+          "phone": null,
+          "email": null,
+          "notes": "property management, pressure washing, landscaping"
+        }
+      ],
+      "change_type": "added"
+    },
+    {
+      "field": "technical_setup",
+      "old_value": null,
+      "new_value": {
+        "phone_type": "Android",
+        "call_forwarding": "forward calls to Clara if not answered or declined",
+        "has_second_number": true,
+        "transfer_enabled": true
+      },
+      "change_type": "added"
+    },
+    {
+      "field": "notifications.email",
+      "old_value": null,
+      "new_value": "info@benselectricsolutionsteam.com",
+      "change_type": "added"
+    }
+  ],
+  "next_steps": [
+    "set up second number",
+    "test Clara with test calls",
+    "set up Clara to take live calls this weekend"
+  ],
+  "remaining_unknowns": []
+}
