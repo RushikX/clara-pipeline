@@ -91,11 +91,6 @@ Used from `data/prompts/`:
 - `groq_onboarding_user.txt`
 - `agent_system_prompt_template.txt`
 
-## Known Notes
-
-- `pipeline_b.json` currently expects `/data/prompts/agent_system_prompt_template_v2.txt`.
-- Repo currently contains `agent_system_prompt_template.txt`.
-- Fix by renaming/duplicating template file or updating workflow node path.
 
 ## Outputs in This Repo
 
