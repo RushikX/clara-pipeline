@@ -1,7 +1,8 @@
 # Clara Pipeline
 
 Automated n8n workflows that convert call transcripts into structured artifacts for configuring a Clara voice agent.
-
+## Demo Loom Video
+Loom Link: https://www.loom.com/share/e7f560dbb55d4a4ca9be677f331f7c0e
 ## Pipelines
 
 1. **Pipeline A: Demo -> V1**
