@@ -1,9 +1,9 @@
 {
   "account_id": "bens_electric_solutions",
-  "company_name": "Clara",
+  "company_name": "string or null",
   "owner_name": "Ben",
-  "email": null,
-  "phone": null,
+  "email": "string or null",
+  "phone": "string or null",
   "business_hours": {
     "days": [
       "Monday",
@@ -15,21 +15,24 @@
     "start": "08:30",
     "end": "17:00",
     "timezone": "America/Edmonton",
-    "raw": null
+    "raw": "string or null"
   },
-  "office_address": null,
+  "office_address": "string or null",
   "services_supported": [
-    "Electrical work",
-    "Service calls",
-    "Renovations",
-    "Troubleshooting",
+    "service calls",
+    "small jobs",
+    "odd jobs",
+    "renovations",
+    "troubleshooting",
+    "full projects",
+    "new custom home",
+    "tenant infill",
     "EV chargers",
-    "Hot tub hookups",
-    "Panel changes",
-    "Residential and commercial projects"
+    "hot tub hookups",
+    "panel changes"
   ],
   "services_not_supported": [
-    "Gemstone lights"
+    "gemstone lights"
   ],
   "emergency_definition": [],
   "emergency_routing_rules": {
@@ -39,7 +42,7 @@
   },
   "non_emergency_routing_rules": {
     "during_hours": "Collect info, schedule appointment",
-    "after_hours": "Take message, callback next business day"
+    "after_hours": "string or null"
   },
   "call_transfer_rules": {
     "transfer_enabled": false,
@@ -52,12 +55,12 @@
     "CRM: Jobber"
   ],
   "pricing": {
-    "service_call_fee": null,
-    "hourly_rate": null,
+    "service_call_fee": "string or null",
+    "hourly_rate": "string or null",
     "disclose_policy": "Only if customer asks"
   },
   "plan_selected": {
-    "plan_name": null,
+    "plan_name": "string or null",
     "monthly_cost": null,
     "term_months": null
   },
@@ -66,13 +69,17 @@
     "team_size": 5,
     "num_trucks": 3,
     "has_subcontractors": true,
-    "owner_role": "Owner/Operator"
+    "owner_role": "electrician"
   },
-  "questions_or_unknowns": [],
-  "notes": "Ben is the owner/operator of an electrical contracting business with 30 years of experience. He has a team of 5 people, including himself, and uses the Jobber CRM system. They offer a variety of electrical services, including service calls, renovations, and troubleshooting.",
+  "questions_or_unknowns": [
+    "how to use a virtual receptionist",
+    "how to use a different phone system",
+    "how to manage a team of electricians"
+  ],
+  "notes": "Ben is an electrician with 30 years of experience running his own business for 8 years. He has a team of 5 people, including himself, and offers a variety of services such as service calls, small jobs, and full projects. He is looking to grow his business and is interested in learning more about Clara's AI-powered platform.",
   "_metadata": {
     "version": "v1",
-    "created_at": "2026-03-04T16:48:22.032Z",
+    "created_at": "2026-03-05T05:07:56.315Z",
     "source": "demo_call"
   }
 }

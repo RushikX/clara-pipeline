@@ -1,21 +1,21 @@
 {
   "version": "v2",
   "previous_version": "v1",
-  "generated_at": "2026-03-04T16:59:37.137Z",
+  "generated_at": "2026-03-05T05:10:09.959Z",
   "source": "onboarding_call",
   "summary": "6 changes detected",
   "changes": [
     {
       "field": "pricing.service_call_fee",
-      "old_value": null,
+      "old_value": "string or null",
       "new_value": 115,
-      "change_type": "added"
+      "change_type": "updated"
     },
     {
       "field": "pricing.hourly_rate",
-      "old_value": null,
+      "old_value": "string or null",
       "new_value": 98,
-      "change_type": "added"
+      "change_type": "updated"
     },
     {
       "field": "business_hours",
@@ -42,7 +42,7 @@
       "old_value": null,
       "new_value": {
         "phone_type": "Android",
-        "call_forwarding": "forward calls to Clara if not answered or declined",
+        "call_forwarding": "forward to Clara if not answered or declined",
         "has_second_number": true,
         "transfer_enabled": true
       },
@@ -50,15 +50,14 @@
     },
     {
       "field": "notifications.email",
-      "old_value": null,
+      "old_value": "string or null",
       "new_value": "info@benselectricsolutionsteam.com",
-      "change_type": "added"
+      "change_type": "updated"
     }
   ],
   "next_steps": [
     "set up second number",
-    "test Clara with test calls",
-    "set up Clara to take live calls this weekend"
+    "test Clara with live calls this weekend"
   ],
   "remaining_unknowns": []
 }

@@ -1,0 +1,125 @@
+{
+  "tasks": [
+    {
+      "task_id": "TASK-1772684573403",
+      "account_id": "bens_electric_solutions",
+      "company_name": "string or null",
+      "task_type": "demo_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline A: Demo -> V1",
+      "version": "v1",
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v1/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v1/agent_spec.json"
+      },
+      "created_at": "2026-03-05T04:22:53.403Z",
+      "created_by": "n8n_automation",
+      "next_action": "Await onboarding call for V2 update",
+      "notes": "Ben is an electrician with 30 years of experience, running his own business for 8 years. He has a team of 5 people, including himself, and offers various electrical services. He is looking for a solution to manage his business and handle emergency calls."
+    },
+    {
+      "task_id": "TASK-1772684638246",
+      "account_id": "bens_electric_solutions",
+      "company_name": null,
+      "task_type": "demo_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline A: Demo -> V1",
+      "version": "v1",
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v1/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v1/agent_spec.json"
+      },
+      "created_at": "2026-03-05T04:23:58.246Z",
+      "created_by": "n8n_automation",
+      "next_action": "Await onboarding call for V2 update",
+      "notes": "Ben is an electrician with 30 years of experience, running his own business for 8 years. He has a team of 5, including himself, and offers a wide range of services, including service calls, small jobs, and full projects. He is looking to grow his business and is interested in exploring how Clara's AI agent can help him manage his workflows and improve his operations."
+    },
+    {
+      "task_id": "TASK-1772684673540",
+      "account_id": "bens_electric_solutions",
+      "company_name": null,
+      "task_type": "demo_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline A: Demo -> V1",
+      "version": "v1",
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v1/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v1/agent_spec.json"
+      },
+      "created_at": "2026-03-05T04:24:33.540Z",
+      "created_by": "n8n_automation",
+      "next_action": "Await onboarding call for V2 update",
+      "notes": "Ben is an electrician with 30 years of experience, running his own business for 8 years. He has a team of 5, including himself, and offers a wide range of electrical services. He is looking to grow his business and is interested in exploring new solutions to manage his operations."
+    },
+    {
+      "task_id": "TASK-1772685670657",
+      "account_id": "bens_electric_solutions",
+      "company_name": "string or null",
+      "task_type": "demo_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline A: Demo -> V1",
+      "version": "v1",
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v1/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v1/agent_spec.json"
+      },
+      "created_at": "2026-03-05T04:41:10.657Z",
+      "created_by": "n8n_automation",
+      "next_action": "Await onboarding call for V2 update",
+      "notes": "Ben is an electrician with 30 years of experience, running his own business for 8 years. He has a team of 5 people, including himself, and offers various electrical services. He is looking for a solution to manage his business and handle multiple services."
+    },
+    {
+      "task_id": "TASK-1772685731089",
+      "account_id": "bens_electric_solutions",
+      "company_name": "string or null",
+      "task_type": "onboarding_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline B: Onboarding -> V2",
+      "version": "v2",
+      "changes_count": 6,
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v2/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v2/agent_spec.json",
+        "changelog": "outputs/bens_electric_solutions/v2/changelog.json"
+      },
+      "created_at": "2026-03-05T04:42:11.089Z",
+      "created_by": "n8n_automation",
+      "next_action": "Agent ready for deployment"
+    },
+    {
+      "task_id": "TASK-1772687276358",
+      "account_id": "bens_electric_solutions",
+      "company_name": "string or null",
+      "task_type": "demo_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline A: Demo -> V1",
+      "version": "v1",
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v1/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v1/agent_spec.json"
+      },
+      "created_at": "2026-03-05T05:07:56.358Z",
+      "created_by": "n8n_automation",
+      "next_action": "Await onboarding call for V2 update",
+      "notes": "Ben is an electrician with 30 years of experience running his own business for 8 years. He has a team of 5 people, including himself, and offers a variety of services such as service calls, small jobs, and full projects. He is looking to grow his business and is interested in learning more about Clara's AI-powered platform."
+    },
+    {
+      "task_id": "TASK-1772687409980",
+      "account_id": "bens_electric_solutions",
+      "company_name": "string or null",
+      "task_type": "onboarding_call_processed",
+      "status": "complete",
+      "pipeline": "Pipeline B: Onboarding -> V2",
+      "version": "v2",
+      "changes_count": 6,
+      "outputs": {
+        "account_memo": "outputs/bens_electric_solutions/v2/account_memo.json",
+        "agent_spec": "outputs/bens_electric_solutions/v2/agent_spec.json",
+        "changelog": "outputs/bens_electric_solutions/v2/changelog.json"
+      },
+      "created_at": "2026-03-05T05:10:09.981Z",
+      "created_by": "n8n_automation",
+      "next_action": "Agent ready for deployment"
+    }
+  ]
+}

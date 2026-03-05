@@ -1,9 +1,9 @@
 {
   "account_id": "bens_electric_solutions",
-  "company_name": "Clara",
+  "company_name": "string or null",
   "owner_name": "Ben",
   "email": "info@benselectricsolutionsteam.com",
-  "phone": null,
+  "phone": "string or null",
   "business_hours": {
     "days": [
       "Monday",
@@ -15,21 +15,24 @@
     "start": "09:00",
     "end": "17:00",
     "timezone": "America/Edmonton",
-    "raw": null
+    "raw": "string or null"
   },
-  "office_address": null,
+  "office_address": "string or null",
   "services_supported": [
-    "Electrical work",
-    "Service calls",
-    "Renovations",
-    "Troubleshooting",
+    "service calls",
+    "small jobs",
+    "odd jobs",
+    "renovations",
+    "troubleshooting",
+    "full projects",
+    "new custom home",
+    "tenant infill",
     "EV chargers",
-    "Hot tub hookups",
-    "Panel changes",
-    "Residential and commercial projects"
+    "hot tub hookups",
+    "panel changes"
   ],
   "services_not_supported": [
-    "Gemstone lights"
+    "gemstone lights"
   ],
   "emergency_definition": [
     "Emergency calls from G&M Pressure Washing"
@@ -64,10 +67,10 @@
   "pricing": {
     "service_call_fee": 115,
     "hourly_rate": 98,
-    "disclose_policy": "mention pricing when asked"
+    "disclose_policy": "mention on request"
   },
   "plan_selected": {
-    "plan_name": null,
+    "plan_name": "string or null",
     "monthly_cost": null,
     "term_months": null
   },
@@ -76,14 +79,18 @@
     "team_size": 5,
     "num_trucks": 3,
     "has_subcontractors": true,
-    "owner_role": "Owner/Operator"
+    "owner_role": "electrician"
   },
-  "questions_or_unknowns": [],
-  "notes": "Ben is the owner/operator of an electrical contracting business with 30 years of experience. He has a team of 5 people, including himself, and uses the Jobber CRM system. They offer a variety of electrical services, including service calls, renovations, and troubleshooting.",
+  "questions_or_unknowns": [
+    "how to use a virtual receptionist",
+    "how to use a different phone system",
+    "how to manage a team of electricians"
+  ],
+  "notes": "Ben is an electrician with 30 years of experience running his own business for 8 years. He has a team of 5 people, including himself, and offers a variety of services such as service calls, small jobs, and full projects. He is looking to grow his business and is interested in learning more about Clara's AI-powered platform.",
   "_metadata": {
     "version": "v2",
-    "created_at": "2026-03-04T16:48:22.032Z",
-    "updated_at": "2026-03-04T16:59:37.137Z",
+    "created_at": "2026-03-05T05:07:56.315Z",
+    "updated_at": "2026-03-05T05:10:09.959Z",
     "sources": [
       "demo_call",
       "onboarding_call"
@@ -91,13 +98,12 @@
   },
   "technical_setup": {
     "phone_type": "Android",
-    "call_forwarding": "forward calls to Clara if not answered or declined",
+    "call_forwarding": "forward to Clara if not answered or declined",
     "has_second_number": true,
     "transfer_enabled": true
   },
   "special_handling_rules": [
-    "mention service call fee when asked",
-    "forward calls to Clara if not answered or declined",
-    "transfer calls to second number if needed"
+    "mention service call fee on request",
+    "forward calls to G&M Pressure Washing after hours"
   ]
 }
